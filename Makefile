@@ -5,12 +5,17 @@
 
 setup:
 	@echo "Starting Docker containers..."
-	docker compose up -d
+	docker compose --env-file ../.env up -d
+	@echo "Pulling AI models (this will be fast if already downloaded)..."
+	docker compose --env-file ../.env exec ollama ollama pull nomic-embed-text
+	docker compose --env-file ../.env exec ollama ollama pull llama3.1
+	docker compose --env-file ../.env exec ollama ollama pull phi3
 	@echo "Running database migrations..."
 	cd backend && uv run alembic upgrade head
 	@echo "Seeding the database..."
 	cd backend && uv run python -m scripts.seed
 	@echo "Environment fully built, seeded, and ready!"
+	cd --
 
 teardown:
 	@echo "Shutting down and wiping database volumes..."

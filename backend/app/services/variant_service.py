@@ -1,5 +1,6 @@
 import json
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers.string import StrOutputParser
 from app.services.llm import get_chat_model
 from app.services.embeddings import get_embeddings
 
@@ -8,7 +9,6 @@ class VariantService:
         self.llm = get_chat_model()
         self.embeddings = get_embeddings()
         
-        # 2. Define the strict behavior rules for the LLM
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", 
              "You are an expert technical interviewer. Rewrite algorithmic problems "
@@ -21,16 +21,18 @@ class VariantService:
              "Create a new story that logically requires this exact input/output.")
         ])
         
-        # 3. Chain the prompt and the LLM together
-        self.chain = self.prompt | self.llm
+        self.chain = self.prompt | self.llm | StrOutputParser()
 
     async def generate_text(self, statement: str, signature: dict) -> str:
-        signature_str = json.dumps(signature, indent=2)
-        response = await self.chain.ainvoke({
+        print(statement)
+        print(signature)
+        response_string = await self.chain.ainvoke({
             "statement": statement,
-            "signature": signature_str
+            "signature": json.dumps(signature, indent=2)
         })
-        return response.content.strip()
+        
+        print(response_string)
+        return response_string.strip()
 
     async def generate_vector(self, text: str) -> list[float]:
         return await self.embeddings.aembed_query(text)

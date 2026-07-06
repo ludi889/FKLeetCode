@@ -1,6 +1,6 @@
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Optional
 
 def find_project_root(markers: List[str] = [".git", ".project-root"]) -> Path:
     """Walk up from this file until a directory containing `marker` is found."""
@@ -19,8 +19,15 @@ class Settings(BaseSettings):
     postgres_password: str
     postgres_db: str
     ollama_base_url: str
-    ollama_chat_model: str
-    ollama_embedding_model: str
+    llm_provider: str
+    embeddings_provider: str
+    eval_provider: str
+    llm_model: str
+    embeddings_model: str
+    eval_model: str
+    llm_api_key: Optional[str] = None
+    embeddings_api_key: Optional[str] = None
+    eval_api_key: Optional[str] = None
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
