@@ -11,7 +11,7 @@ def real_variant_service():
     return VariantService()
 
 @pytest.mark.asyncio
-async def test_variant_quality(real_variant_service, ensure_ollama_running):
+async def test_variant_quality(real_variant_service):
     original_statement = "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target."
     signature = {"input": ["List[int]", "int"], "output": "List[int]"}
     

@@ -24,44 +24,6 @@ DEFAULT_DATABASE_URL = (
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 
-# backend/tests/conftest.py
-# ... (existing imports)
-import httpx
-
-# ... (existing database fixtures)
-
-@pytest_asyncio.fixture(scope="session")
-async def ensure_ollama_running():
-    """
-    Pings the local Ollama server to ensure it is running and has the correct models.
-    Fails the test suite immediately with a helpful error if the environment is broken.
-    """
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get("http://localhost:11434/api/tags", timeout=5.0)
-            response.raise_for_status()
-            
-            models_data = response.json().get("models", [])
-            installed_models = [model["name"] for model in models_data]
-            
-            if not any("llama3.1" in m for m in installed_models):
-                pytest.fail(
-                    "Ollama is running, but 'llama3.1' is missing. "
-                    "Run: docker compose exec ollama ollama pull llama3.1"
-                )
-                
-            if not any("nomic-embed-text" in m for m in installed_models):
-                pytest.fail(
-                    "Ollama is running, but 'nomic-embed-text' is missing. "
-                    "Run: docker compose exec ollama ollama pull nomic-embed-text"
-                )
-                
-        except httpx.ConnectError:
-            pytest.fail(
-                "Ollama server is completely unreachable. "
-                "Did you forget to run 'docker compose up -d'?"
-            )
-
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def create_test_db_if_not_exists():
     """Automatically creates the test database before any tests run."""
@@ -88,7 +50,7 @@ async def setup_test_db_schema(create_test_db_if_not_exists):
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         
-    yield # Run all tests in the suite
+    yield
     
     async with test_engine.begin() as conn:
         # Clean up cleanly at the very end
