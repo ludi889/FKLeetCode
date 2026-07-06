@@ -13,6 +13,14 @@ SEED_PROBLEMS = [
             "of the two numbers such that they add up to target. Each input has "
             "exactly one solution, and you may not use the same element twice."
         ),
+        "signature": {
+            "name": "two_sum",
+            "args": [
+                {"name": "nums", "type": "list[int]"},
+                {"name": "target", "type": "int"}
+            ],
+            "returns": "list[int]"
+        },
         "constraints": {
             "array_length": {"min": 2, "max": 10_000},
             "value_range": {"min": -1_000_000_000, "max": 1_000_000_000},
@@ -45,6 +53,11 @@ SEED_PROBLEMS = [
             "determine if the input string is valid. An input string is valid if open brackets "
             "are closed by the same type of brackets, and in the correct order."
         ),
+        "signature": {
+            "name": "is_valid",
+            "args": [{"name": "s", "type": "str"}],
+            "returns": "bool"
+        },
         "constraints": {
             "string_length": {"min": 1, "max": 10_000},
             "characters": ["(", ")", "{", "}", "[", "]"]
@@ -82,6 +95,11 @@ SEED_PROBLEMS = [
             "buy one stock and choosing a different day in the future to sell that stock. "
             "Return the maximum profit you can achieve. If you cannot achieve any profit, return 0."
         ),
+        "signature": {
+            "name": "max_profit",
+            "args": [{"name": "prices", "type": "list[int]"}],
+            "returns": "int"
+        },
         "constraints": {
             "array_length": {"min": 1, "max": 100_000},
             "price_value": {"min": 0, "max": 10_000}
@@ -112,6 +130,11 @@ SEED_PROBLEMS = [
         "statement": (
             "Given a string s, find the length of the longest substring without repeating characters."
         ),
+        "signature": {
+            "name": "length_of_longest_substring",
+            "args": [{"name": "s", "type": "str"}],
+            "returns": "int"
+        },
         "constraints": {
             "string_length": {"min": 0, "max": 50_000},
             "characters": "English letters, digits, symbols and spaces"
@@ -146,6 +169,11 @@ SEED_PROBLEMS = [
             "the product of all the elements of nums except nums[i]. You must write an algorithm "
             "that runs in O(n) time and without using the division operation."
         ),
+        "signature": {
+            "name": "product_except_self",
+            "args": [{"name": "nums", "type": "list[int]"}],
+            "returns": "list[int]"
+        },
         "constraints": {
             "array_length": {"min": 2, "max": 100_000},
             "value_range": {"min": -30, "max": 30},
@@ -181,6 +209,11 @@ SEED_PROBLEMS = [
             "intervals, and return an array of the non-overlapping intervals that cover all the "
             "intervals in the input."
         ),
+        "signature": {
+            "name": "merge_intervals",
+            "args": [{"name": "intervals", "type": "list[list[int]]"}],
+            "returns": "list[list[int]]"
+        },
         "constraints": {
             "array_length": {"min": 1, "max": 10_000},
             "interval_values": {"min": 0, "max": 10_000}
@@ -207,8 +240,6 @@ SEED_PROBLEMS = [
         "tags": {"topics": ["array", "sorting"]},
     }
 ]
-
-
 async def seed() -> None:
     async with AsyncSessionLocal() as session:
         for data in SEED_PROBLEMS:
