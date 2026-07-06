@@ -10,5 +10,30 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    command: >
+      sh -c "
+      echo 'Waiting for Ollama server to boot...' &&
+      sleep 5 &&
+      echo 'Pulling nomic-embed-text (this is fast)...' &&
+      ollama pull nomic-embed-text &&
+      echo 'Pulling llama3.1 (this will take a few minutes)...' &&
+      ollama pull llama3.1 &&
+      echo 'All AI models loaded successfully!'
+      "
+
 volumes:
   pgdata:
+  ollama_data:

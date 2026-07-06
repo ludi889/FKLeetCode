@@ -7,4 +7,4 @@ def get_embeddings():
         from langchain_ollama import OllamaEmbeddings
         return OllamaEmbeddings(model=settings.ollama_embed_model, base_url=settings.ollama_base_url)
     else:
-        raise NotImplementedError("Not implemented for other vendros than ollama")
+        raise NotImplementedError("Not implemented for other vendors than ollama")

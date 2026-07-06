@@ -18,8 +18,12 @@ class Settings(BaseSettings):
     postgres_user: str
     postgres_password: str
     postgres_db: str
+    ollama_base_url: str
+    ollama_chat_model: str
+    ollama_embedding_model: str
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
