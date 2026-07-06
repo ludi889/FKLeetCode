@@ -7,14 +7,14 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
 
-from app.db.base import Base
+from app.db.base_class import Base
 
 
 class Problem(Base):
     __tablename__ = "problems"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, server_default=func.gen_random_uuid(), comment="Canonical problem identifier")
-    title: Mapped[str] = mapped_column(String, nullable=False, comment="Short internal name, e.g. 'Two Sum'")
+    title: Mapped[str] = mapped_column(String, unique=True, nullable=False, comment="Short internal name, e.g. 'Two Sum'")
     statement: Mapped[str] = mapped_column(Text, nullable=False, comment="Original, undisguised problem statement shown only internally")
     signature: Mapped[dict] = mapped_column(JSON, nullable=False, server_default='{}', comment="Strict I/O typing (function name, args, returns) to enforce LLM boundaries")
     constraints: Mapped[dict] = mapped_column(JSON, nullable=False, comment="Input bounds and edge-case rules the translation must preserve exactly")

@@ -2,9 +2,8 @@ import asyncio
 
 from sqlalchemy import select
 
-from app.models.problem import Problem
 from app.db.session import AsyncSessionLocal
-
+from app.db.base import Problem, Session
 SEED_PROBLEMS = [
     {
         "title": "Two Sum",
