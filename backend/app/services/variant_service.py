@@ -24,14 +24,11 @@ class VariantService:
         self.chain = self.prompt | self.llm | StrOutputParser()
 
     async def generate_text(self, statement: str, signature: dict) -> str:
-        print(statement)
-        print(signature)
         response_string = await self.chain.ainvoke({
             "statement": statement,
             "signature": json.dumps(signature, indent=2)
         })
         
-        print(response_string)
         return response_string.strip()
 
     async def generate_vector(self, text: str) -> list[float]:
