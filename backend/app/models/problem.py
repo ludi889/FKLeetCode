@@ -23,7 +23,6 @@ class Problem(Base):
     difficulty: Mapped[str] = mapped_column(String, nullable=False, comment="e.g. easy / medium / hard")
     tags: Mapped[dict] = mapped_column(JSON, nullable=False, comment="Topic tags for randomization, e.g. ['arrays', 'hash-map']")
     
-    # Note: See the 'Bonus Tip' below regarding this column!
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     variants: Mapped[list["ProblemVariant"]] = relationship(back_populates="problem")
@@ -38,7 +37,6 @@ class ProblemVariant(Base):
     embedding = mapped_column(Vector(768), nullable=True, comment="Embedding of translated_statement, used for scenario grounding + dedup checks")
     validated: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false", comment="True once the reference solution has passed against this variant's re-derived test cases")
     
-    # Note: See the 'Bonus Tip' below regarding this column!
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     problem: Mapped["Problem"] = relationship(back_populates="variants")

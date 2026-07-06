@@ -1,4 +1,3 @@
-# backend/tests/test_problems.py
 async def test_create_problem(client):
     response = await client.post("/problems/", json={
             "title": "Two Sum",

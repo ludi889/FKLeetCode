@@ -1,4 +1,3 @@
-# backend/tests/conftest.py
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -10,7 +9,6 @@ from app.db.base_class import Base
 from app.db.session import get_db
 from app.core.config import settings
 
-# Put this LAST so the FastAPI instance is what 'app' ultimately refers to
 from app.main import app
 
 TEST_DATABASE_URL = (
@@ -18,7 +16,6 @@ TEST_DATABASE_URL = (
     f"@localhost:5432/test_db"
 )
 
-# Construct the URL for the default database (used ONLY for creating the test_db)
 DEFAULT_DATABASE_URL = (
     f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}"
     f"@localhost:5432/postgres"
@@ -30,17 +27,14 @@ TestingSessionLocal = async_sessionmaker(test_engine, expire_on_commit=False)
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def create_test_db_if_not_exists():
     """Automatically creates the test database before any tests run."""
-    # FIX: Use DEFAULT_DATABASE_URL here!
     default_engine = create_async_engine(DEFAULT_DATABASE_URL, isolation_level="AUTOCOMMIT")
     
     async with default_engine.connect() as conn:
-        # Check if the database already exists
         result = await conn.execute(
             text("SELECT 1 FROM pg_database WHERE datname = 'test_db'")
         )
         exists = result.scalar()
         
-        # If it doesn't exist, create it!
         if not exists:
             await conn.execute(text("CREATE DATABASE test_db"))
             
@@ -52,15 +46,13 @@ async def setup_test_database(create_test_db_if_not_exists):
     It creates the extensions, builds the tables, runs the test, and drops the tables.
     """
     async with test_engine.begin() as conn:
-        # Create extensions required by your models
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         
-        # Drop and recreate all tables for a perfectly clean slate
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
         
-    yield # The actual test runs here
+    yield
     
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
