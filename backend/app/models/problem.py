@@ -16,7 +16,7 @@ class Problem(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, server_default=func.gen_random_uuid(), comment="Canonical problem identifier")
     title: Mapped[str] = mapped_column(String, nullable=False, comment="Short internal name, e.g. 'Two Sum'")
     statement: Mapped[str] = mapped_column(Text, nullable=False, comment="Original, undisguised problem statement shown only internally")
-    signature: Mapped[dict] = mapped_column(JSON, nullable=False, comment="Strict I/O typing (function name, args, returns) to enforce LLM boundaries")
+    signature: Mapped[dict] = mapped_column(JSON, nullable=False, server_default='{}', comment="Strict I/O typing (function name, args, returns) to enforce LLM boundaries")
     constraints: Mapped[dict] = mapped_column(JSON, nullable=False, comment="Input bounds and edge-case rules the translation must preserve exactly")
     reference_solution: Mapped[str] = mapped_column(Text, nullable=False, comment="Known-correct solution, used to validate translated variants")
     test_cases: Mapped[dict] = mapped_column(JSON, nullable=False, comment="Hidden test suite; never shown to the candidate")
