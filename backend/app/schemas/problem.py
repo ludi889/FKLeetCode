@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
+from typing import List
 
 
 class ProblemCreate(BaseModel):
@@ -21,3 +22,6 @@ class ProblemRead(BaseModel):
     difficulty: str
     tags: dict
     created_at: datetime
+
+class GetProblemsResponseModel(BaseModel):
+    problems: List[ProblemRead]

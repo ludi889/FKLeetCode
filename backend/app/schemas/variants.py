@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-
+from typing import Optional
 class PostGenerateAndSaveVariantResponseModel(BaseModel):
-    id: str
-    translated_statement: str
+    id: Optional[str] = None
+    translated_statement: Optional[str] = None
+    is_valid: bool

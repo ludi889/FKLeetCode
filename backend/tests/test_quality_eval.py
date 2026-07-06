@@ -4,8 +4,7 @@ from deepeval import assert_test
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 from deepeval.metrics import GEval
 from app.services.variant_service import VariantService
-from app.core.config import settings
-from .eval_llm import JudgeModel
+from app.services.judge_model import JudgeModel
 
 @pytest.fixture
 def real_variant_service():

@@ -3,6 +3,11 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.string import StrOutputParser
 from app.services.llm import get_chat_model
 from app.services.embeddings import get_embeddings
+from app.services.judge_model import JudgeModel
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCase, SingleTurnParams
+from app.models.problem import ProblemVariant
+from sqlalchemy import select
 
 class VariantService:
     def __init__(self):
@@ -33,6 +38,31 @@ class VariantService:
 
     async def generate_vector(self, text: str) -> list[float]:
         return await self.embeddings.aembed_query(text)
+
+    async def validate_variant(self, original_statement: str, translated_statement: str, signature: dict) -> bool:
+        judge = JudgeModel()
+        metric = GEval(
+            name="Constraint Preservation",
+            criteria="Does the actual output preserve the same input/output types and logical constraints as the original, without introducing new ambiguity?",
+            evaluation_params=[SingleTurnParams.ACTUAL_OUTPUT],
+            model=judge,
+            threshold=0.7,
+        )
+        test_case = LLMTestCase(input=original_statement, actual_output=translated_statement)
+        metric.measure(test_case)
+        return metric.score >= metric.threshold
+
+    async def find_similar_variant(self, problem_id, embedding, threshold: float = 0.15):
+        result = await self.db.execute(
+            select(ProblemVariant)
+            .where(ProblemVariant.problem_id == problem_id)
+            .order_by(ProblemVariant.embedding.cosine_distance(embedding))
+            .limit(1)
+        )
+        closest = result.scalar_one_or_none()
+        if closest and closest.embedding.cosine_distance(embedding) < threshold:
+            return closest
+        return None
 
     async def create_variant_payload(self, statement: str, signature: dict) -> dict:
         translated_text = await self.generate_text(statement, signature)
