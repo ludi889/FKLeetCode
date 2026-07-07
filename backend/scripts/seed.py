@@ -2,7 +2,7 @@ import asyncio
 
 from sqlalchemy import select
 
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, engine
 from app.db.base import Problem, Session, ProblemVariant
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -286,4 +286,11 @@ async def seed() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(seed())
+    try:
+        asyncio.run(seed())
+    except Exception as e:
+        print(f"Seeding failed: {e}")
+        raise
+    finally:
+        print("Disposing engine...")
+        asyncio.run(engine.dispose())

@@ -1,31 +1,31 @@
 # Makefile
-
-# .PHONY tells Make that these aren't actual files on your hard drive, just commands.
-.PHONY: setup teardown test logs
+.PHONY: setup teardown test logs migrate seed
 
 setup:
-	@echo "Starting Docker containers..."
-	docker compose --env-file ../.env up -d
-	@echo "Pulling AI models (this will be fast if already downloaded)..."
-	docker compose --env-file ../.env exec ollama ollama pull nomic-embed-text
-	docker compose --env-file ../.env exec ollama ollama pull llama3.1
-	docker compose --env-file ../.env exec ollama ollama pull phi3
-	@echo "Running database migrations..."
-	cd backend && uv run alembic upgrade head
-	@echo "Seeding the database..."
-	cd backend && uv run python -m scripts.seed
-	@echo "Environment fully built, seeded, and ready!"
-	cd --
+	@echo "--- Spinning up Docker services ---"
+	docker compose --env-file .env up -d --build
+	@echo "--- Pulling AI models ---"
+	docker compose exec ollama ollama pull nomic-embed-text
+	docker compose exec ollama ollama pull llama3.1
+	docker compose exec ollama ollama pull phi3
+	@echo "--- Migrating & Seeding database ---"
+	$(MAKE) migrate
+	$(MAKE) seed
+	@echo "🚀 FKLeetCode environment fully built, seeded, and ready!"
 
 teardown:
-	@echo "Shutting down and wiping database volumes..."
+	@echo "--- Destroying environment ---"
 	docker compose down -v
-	@echo "Environment destroyed for a clean slate!"
+
+migrate:
+	docker compose exec backend uv run alembic upgrade head
+
+seed:
+	docker compose exec backend uv run python -m scripts.seed
 
 test:
-	@echo "Running test suite..."
-	cd backend && uv run pytest
+	@echo "--- Running test suite inside container ---"
+	docker compose exec backend uv run pytest
 
 logs:
-	@echo "Tailing Docker logs..."
 	docker compose logs -f

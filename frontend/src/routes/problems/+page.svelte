@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { fetchProblems } from '$lib/api';
+    import { fetchProblems } from '$lib/api/client';
     
     // Trigger the fetch immediately when the component loads
     const problemsPromise = fetchProblems();
