@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     app.state.variant_service = VariantService()
 
     yield    
-    await app.state.arq_pool.close()
+    await app.state.arq_pool.aclose()
 app = FastAPI(title="FKLeetCode", lifespan=lifespan)
 app.include_router(problems_router)
 app.include_router(variant_router)

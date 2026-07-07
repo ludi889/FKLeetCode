@@ -35,16 +35,13 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     redis_host: str = "localhost"
     redis_port: int = 6379
+    redis_url: str = f"redis://{redis_host}:{redis_port}"
 
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env" if BASE_DIR else None,
         extra="ignore",
     )
-
-    @property
-    def redis_url(self) -> str:
-        return f"redis://{self.redis_host}:{self.redis_port}"
 
     @property
     def database_url(self) -> str:
