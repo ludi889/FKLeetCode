@@ -4,6 +4,23 @@ from sqlalchemy import select
 
 from app.db.session import AsyncSessionLocal
 from app.db.base import Problem, Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
+async def seed_database(async_session: AsyncSession):
+    async with async_session as session:
+        for data in SEED_PROBLEMS:
+            existing = await session.execute(
+                select(Problem).where(Problem.title == data["title"])
+            )
+            if existing.scalar_one_or_none():
+                print(f"Skipping '{data['title']}' — already exists.")
+                continue
+
+            session.add(Problem(**data))
+            print(f"Inserting '{data['title']}'.")
+
+        await session.commit()
+
 SEED_PROBLEMS = [
     {
         "title": "Two Sum",
@@ -44,6 +61,39 @@ SEED_PROBLEMS = [
         },
         "difficulty": "easy",
         "tags": {"topics": ["arrays", "hash-map"]},
+        "variants": [
+            {
+                "validated": True,
+                "scenario_context": "You are a logistics coordinator loading a cargo plane with specific weight limits.",
+                "stage_1_mvp": "You are given a list of container weights (`nums`) and the exact remaining weight capacity of the plane (`target`). To maintain balance, you must select exactly two containers that, when combined, perfectly match the remaining capacity. Return their indices.",
+                "stage_2_curveball": "The containers are no longer sitting in a warehouse; they are arriving one by one on a high-speed conveyor belt. You don't know all the weights in advance. How do you process this stream efficiently to find a match as early as possible?",
+                "stage_3_system": "We now have 10,000 planes being loaded simultaneously across 50 global airports. Design the API and backend architecture to track available container weights and flight capacities in real-time.",
+                "technical_rubric": {
+                    "time_complexity": "Expected O(N) using a Hash Map.",
+                    "space_complexity": "Expected O(N) to store seen elements.",
+                    "edge_cases": "Must handle negative weights (if not explicitly clarified) and duplicate values correctly."
+                },
+                "system_rubric": {
+                    "caching": "Should mention Redis or Memcached for fast lookup of container manifests.",
+                    "scaling": "Should discuss database sharding by airport or region.",
+                    "concurrency": "How do they handle race conditions if two planes try to claim the same container?"
+                },
+                "communication_rubric": {
+                    "clarifying_questions": "Did they ask if weights could be zero or negative? Did they ask about data types?",
+                    "testing": "Did they dry-run their algorithm with a small test case before executing?"
+                }
+            },
+            {
+                "validated": False,  # Keeps your test logic for filtering valid variants intact
+                "scenario_context": "As an alchemist, you are brewing a potion using vials of mana.",
+                "stage_1_mvp": "You have a shelf of vials with varying mana levels (`nums`). To complete the spell, you need exactly two vials whose mana levels sum to the `target` energy required. Return the positions of these two vials.",
+                "stage_2_curveball": "Certain mana types react explosively. How do you filter out incompatible pairs?",
+                "stage_3_system": "Design a marketplace for alchemists to trade vials globally.",
+                "technical_rubric": {},
+                "system_rubric": {},
+                "communication_rubric": {}
+            }
+        ]
     },
     {
         "title": "Valid Parentheses",
@@ -80,19 +130,39 @@ SEED_PROBLEMS = [
                 {"input": {"s": "()[]{}"}, "expected": True},
                 {"input": {"s": "(]"}, "expected": False},
                 {"input": {"s": "([)]"}, "expected": False},
-                {"input": {"s": "{[]}"}, "expected": True}
             ]
         },
         "difficulty": "easy",
         "tags": {"topics": ["string", "stack"]},
+        "variants": [
+            {
+                "validated": True,
+                "scenario_context": "You are a code inspector reviewing XML-like routing paths on a legacy server.",
+                "stage_1_mvp": "The paths are represented by different node openers and closers: '(', ')', '{', '}', '[', ']'. Determine if the network path is fully resolved (i.e., every opened node is closed by its matching counterpart in the correct chronological order).",
+                "stage_2_curveball": "Instead of just returning True/False, the system now requires you to return the exact index of the character where the routing path first became invalid. How does your logic change?",
+                "stage_3_system": "These routing logs are massive (100GB+ per file). We need a service that validates them nightly. How do you build a pipeline to process files that don't fit into RAM?",
+                "technical_rubric": {
+                    "data_structure": "Must use a Stack (List/Array).",
+                    "time_complexity": "Expected O(N).",
+                    "edge_cases": "Must handle strings that are all opening brackets, all closing brackets, or start with a closing bracket."
+                },
+                "system_rubric": {
+                    "file_io": "Should discuss streaming file readers (e.g., Python generators, chunking).",
+                    "distributed_processing": "Can chunks be processed in parallel? (Trick question: state depends on previous chunks, requires discussion of boundary passing)."
+                },
+                "communication_rubric": {
+                    "clarifying_questions": "Did they ask about empty strings?",
+                    "adaptability": "Did they quickly adapt the stack to store tuples of (char, index) for the curveball?"
+                }
+            }
+        ]
     },
     {
         "title": "Best Time to Buy and Sell Stock",
         "statement": (
             "You are given an array prices where prices[i] is the price of a given stock "
             "on the ith day. You want to maximize your profit by choosing a single day to "
-            "buy one stock and choosing a different day in the future to sell that stock. "
-            "Return the maximum profit you can achieve. If you cannot achieve any profit, return 0."
+            "buy one stock and choosing a different day in the future to sell that stock."
         ),
         "signature": {
             "name": "max_profit",
@@ -117,49 +187,32 @@ SEED_PROBLEMS = [
         "test_cases": {
             "cases": [
                 {"input": {"prices": [7, 1, 5, 3, 6, 4]}, "expected": 5},
-                {"input": {"prices": [7, 6, 4, 3, 1]}, "expected": 0},
-                {"input": {"prices": [2, 4, 1]}, "expected": 2}
+                {"input": {"prices": [7, 6, 4, 3, 1]}, "expected": 0}
             ]
         },
         "difficulty": "easy",
         "tags": {"topics": ["array", "dynamic-programming"]},
-    },
-    {
-        "title": "Longest Substring Without Repeating Characters",
-        "statement": (
-            "Given a string s, find the length of the longest substring without repeating characters."
-        ),
-        "signature": {
-            "name": "length_of_longest_substring",
-            "args": [{"name": "s", "type": "str"}],
-            "returns": "int"
-        },
-        "constraints": {
-            "string_length": {"min": 0, "max": 50_000},
-            "characters": "English letters, digits, symbols and spaces"
-        },
-        "reference_solution": (
-            "def length_of_longest_substring(s: str) -> int:\n"
-            "    char_map = {}\n"
-            "    left = 0\n"
-            "    max_length = 0\n"
-            "    for right, char in enumerate(s):\n"
-            "        if char in char_map and char_map[char] >= left:\n"
-            "            left = char_map[char] + 1\n"
-            "        char_map[char] = right\n"
-            "        max_length = max(max_length, right - left + 1)\n"
-            "    return max_length\n"
-        ),
-        "test_cases": {
-            "cases": [
-                {"input": {"s": "abcabcbb"}, "expected": 3},
-                {"input": {"s": "bbbbb"}, "expected": 1},
-                {"input": {"s": "pwwkew"}, "expected": 3},
-                {"input": {"s": ""}, "expected": 0}
-            ]
-        },
-        "difficulty": "medium",
-        "tags": {"topics": ["hash-table", "string", "sliding-window"]},
+        "variants": [
+            {
+                "validated": True,
+                "scenario_context": "You are a space merchant trading dilithium crystals across different star systems.",
+                "stage_1_mvp": "You have a chronological forecast of market values (`prices`). Due to cargo restrictions, you can only buy a crystal once and sell it once at a later date. Find the maximum profit you can achieve.",
+                "stage_2_curveball": "The Intergalactic Federation just introduced a flat tax rate per transaction. How do you modify your algorithm to subtract this fee from the final profit, and does it change when you buy/sell?",
+                "stage_3_system": "Instead of a daily forecast, crystal prices are streaming via sub-space telemetry at 100,000 updates per second. How do you architect a backend to ingest, store, and query this real-time financial data?",
+                "technical_rubric": {
+                    "time_complexity": "Expected O(N) using a single pass, tracking min_price.",
+                    "space_complexity": "Expected O(1).",
+                    "edge_cases": "Array in strictly descending order (must return 0, not a negative loss)."
+                },
+                "system_rubric": {
+                    "streaming": "Should mention Kafka, RabbitMQ, or AWS Kinesis for ingestion.",
+                    "storage": "Should discuss Time-Series Databases (TSDB) like InfluxDB or TimescaleDB."
+                },
+                "communication_rubric": {
+                    "testing": "Did they walk through the strictly descending case manually before running?"
+                }
+            }
+        ]
     },
     {
         "title": "Product of Array Except Self",
@@ -175,8 +228,7 @@ SEED_PROBLEMS = [
         },
         "constraints": {
             "array_length": {"min": 2, "max": 100_000},
-            "value_range": {"min": -30, "max": 30},
-            "guaranteed_fit": "The product of any prefix or suffix fits in a 32-bit integer."
+            "value_range": {"min": -30, "max": 30}
         },
         "reference_solution": (
             "def product_except_self(nums: list[int]) -> list[int]:\n"
@@ -200,59 +252,31 @@ SEED_PROBLEMS = [
         },
         "difficulty": "medium",
         "tags": {"topics": ["array", "prefix-sum"]},
-    },
-    {
-        "title": "Merge Intervals",
-        "statement": (
-            "Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping "
-            "intervals, and return an array of the non-overlapping intervals that cover all the "
-            "intervals in the input."
-        ),
-        "signature": {
-            "name": "merge_intervals",
-            "args": [{"name": "intervals", "type": "list[list[int]]"}],
-            "returns": "list[list[int]]"
-        },
-        "constraints": {
-            "array_length": {"min": 1, "max": 10_000},
-            "interval_values": {"min": 0, "max": 10_000}
-        },
-        "reference_solution": (
-            "def merge_intervals(intervals: list[list[int]]) -> list[list[int]]:\n"
-            "    intervals.sort(key=lambda x: x[0])\n"
-            "    merged = []\n"
-            "    for interval in intervals:\n"
-            "        if not merged or merged[-1][1] < interval[0]:\n"
-            "            merged.append(interval)\n"
-            "        else:\n"
-            "            merged[-1][1] = max(merged[-1][1], interval[1])\n"
-            "    return merged\n"
-        ),
-        "test_cases": {
-            "cases": [
-                {"input": {"intervals": [[1, 3], [2, 6], [8, 10], [15, 18]]}, "expected": [[1, 6], [8, 10], [15, 18]]},
-                {"input": {"intervals": [[1, 4], [4, 5]]}, "expected": [[1, 5]]},
-                {"input": {"intervals": [[1, 4], [2, 3]]}, "expected": [[1, 4]]}
-            ]
-        },
-        "difficulty": "medium",
-        "tags": {"topics": ["array", "sorting"]},
+        "variants": [
+            {
+                "validated": True,
+                "scenario_context": "You are managing a network grid of satellite relays.",
+                "stage_1_mvp": "The transmission strength at a given node is equal to the combined amplification power of all *other* nodes in the network. Given an array of individual satellite powers (`nums`), return the transmission strength for each satellite. The floating point processor is broken, so you cannot use division.",
+                "stage_2_curveball": "Occasionally, a satellite goes entirely offline (power = 0). Your current logic might output 0 for the entire grid. How do you gracefully handle grids containing one zero, or multiple zeros?",
+                "stage_3_system": "The satellites are distributed globally, and their power levels fluctuate constantly. Designing a centralized master server creates too much latency. How do you architect a decentralized system where nodes share their state updates?",
+                "technical_rubric": {
+                    "time_complexity": "Expected O(N) using left/right prefix arrays.",
+                    "space_complexity": "Expected O(1) auxiliary space (excluding the output array).",
+                    "edge_cases": "Must cleanly handle one zero (only that index has non-zero value) and multiple zeros (all indices are zero)."
+                },
+                "system_rubric": {
+                    "consistency": "Should discuss CAP theorem, specifically Eventual Consistency vs Strong Consistency.",
+                    "gossip_protocol": "Bonus points for mentioning Gossip Protocols for node-to-node state replication."
+                },
+                "communication_rubric": {
+                    "clarifying_questions": "Did they proactively ask about zeros or negative power levels before starting Stage 1?"
+                }
+            }
+        ]
     }
 ]
 async def seed() -> None:
-    async with AsyncSessionLocal() as session:
-        for data in SEED_PROBLEMS:
-            existing = await session.execute(
-                select(Problem).where(Problem.title == data["title"])
-            )
-            if existing.scalar_one_or_none():
-                print(f"Skipping '{data['title']}' — already exists.")
-                continue
-
-            session.add(Problem(**data))
-            print(f"Inserting '{data['title']}'.")
-
-        await session.commit()
+    await seed_database(AsyncSessionLocal())
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from app.db.session import get_db
 from app.models.problem import Problem
 from app.schemas.problem import ProblemCreate, ProblemRead, GetProblemsResponseModel
 
-router = APIRouter(prefix="/problems", tags=["problems"])
+router = APIRouter(prefix="/problems", tags=["Problems"])
 
 
 @router.post("/")

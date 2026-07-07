@@ -18,17 +18,27 @@ async def test_variant_quality(real_variant_service):
         statement=original_statement,
         signature=signature
     )
-    generated_story = payload["translated_statement"]
+    
+    assert "scenario_context" in payload
+    assert "stage_1_mvp" in payload
+    assert "stage_2_curveball" in payload
+    assert "stage_3_system" in payload
+    assert "technical_rubric" in payload
+    assert "embedding" in payload
+    assert len(payload["embedding"]) == 768  # Assuming standard pgvector size
+
+    combined_story = f"Context: {payload['scenario_context']}\nTask: {payload['stage_1_mvp']}"
 
     eval_model = JudgeModel()
     
     quality_metric = GEval(
         name="Variant Constraint Adherence",
         evaluation_steps=[
-            "Identify the input/output shape implied by the actual output: what data would a solver need, and what would they need to return?",
-            "Compare that implied shape against: input is a list of numbers and a target integer, output is a list of two integer indices.",
-            "The actual output is a narrative problem statement, not a solution or computation — do not penalize it for lacking numbers, code, or a computed answer.",
-            "Score high only if the implied input/output shape matches, regardless of how the scenario is dressed up.",
+            "Read the 'Context' to understand the real-world scenario.",
+            "Read the 'Task' to identify the required logical input/output shape.",
+            "Compare that implied shape against the original input: a list of numbers and a target integer, returning a list of two integer indices.",
+            "Do not penalize the output for lacking literal code, variables, or computations. It should be a narrative problem statement.",
+            "Score high only if the underlying mathematical/logical constraints match perfectly.",
         ],
         evaluation_params=[SingleTurnParams.ACTUAL_OUTPUT],
         model=eval_model,
@@ -38,7 +48,7 @@ async def test_variant_quality(real_variant_service):
 
     test_case = LLMTestCase(
         input=original_statement,
-        actual_output=generated_story,
+        actual_output=combined_story,
     )
 
     assert_test(test_case, [quality_metric])

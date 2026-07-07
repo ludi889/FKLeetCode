@@ -11,6 +11,7 @@ from app.db.base_class import Base
 from app.db.session import get_db
 from app.core.config import settings
 from app.main import app
+from scripts.seed import seed_database
 
 TEST_DATABASE_URL = (
     f"postgresql+asyncpg://{settings.postgres_user}:{settings.postgres_password}"
@@ -70,6 +71,28 @@ async def db_session():
                 join_transaction_mode="create_savepoint",
                 expire_on_commit=False
             )
+            
+            yield session
+            
+            await session.close()
+            await transaction.rollback()
+
+@pytest_asyncio.fixture(scope="function")
+async def seeded_db_session():
+    """
+    Yields a database session wrapped in a transaction.
+    When the app calls `commit()`, it only commits a savepoint.
+    When the test ends, the outer transaction rolls back automatically!
+    """
+    async with test_engine.connect() as connection:
+        async with connection.begin() as transaction:
+            session = AsyncSession(
+                bind=connection, 
+                join_transaction_mode="create_savepoint",
+                expire_on_commit=False
+            )
+            
+            seed_database(session)
             
             yield session
             

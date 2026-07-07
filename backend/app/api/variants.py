@@ -2,10 +2,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import Optional
 from app.db.session import get_db
 from app.models.problem import Problem, ProblemVariant
-from app.schemas.variants import PostGenerateAndSaveVariantResponseModel
+from app.schemas.variants import PostGenerateAndSaveVariantResponseModel, GetProblemVariantsResponseModel, GetProblemVariantsResponseEntryModel
 from app.services.variant_service import VariantService
 
 router = APIRouter(prefix="/problems", tags=["Variants"])
@@ -50,4 +51,15 @@ async def generate_and_save_variant(
         await db.commit()
         await db.refresh(new_variant)
     response = PostGenerateAndSaveVariantResponseModel(id=new_variant.id, translated_statement=new_variant.translated_statement, is_valid=True)
+    return response
+
+
+@router.get("/{problem_id}/variants")
+async def get_problem_variants(
+    problem_id: str, 
+    db: AsyncSession = Depends(get_db)
+) -> GetProblemVariantsResponseModel:
+    variants_for_problems_query = await db.execute(select(Problem).where(Problem.id == problem_id).options(selectinload(Problem.variants)))
+    variants = variants_for_problems_query.all()
+    response = GetProblemVariantsResponseModel(variants=[variant.model_dump() for variant in variants])
     return response

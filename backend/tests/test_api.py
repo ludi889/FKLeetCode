@@ -2,6 +2,7 @@ import pytest
 from app.schemas.problem import ProblemRead
 from app.schemas.variants import PostGenerateAndSaveVariantResponseModel
 from app.schemas.jobs import PostEnqueueJobResponseModel, GetJobStatusResponseModel
+from app.schemas.sessions import SessionModel
 from unittest.mock import patch, AsyncMock
 from app.main import app
 import asyncio
@@ -61,10 +62,10 @@ async def test_state_is_populated(client):
 @pytest.mark.asyncio
 async def test_enqueue_and_poll_ping_job(client):
     job_schedule_response = await client.post("/jobs/ping")
-    job_schedule_response = PostEnqueueJobResponseModel(**job_schedule_response.json())
+    job_schedule_parsed = PostEnqueueJobResponseModel(**job_schedule_response.json())
     result = None
     for _ in range(20):  # ~10s max, 0.5s between polls
-        status_response = await client.get(f"/jobs/{job_schedule_response.job_id}")
+        status_response = await client.get(f"/jobs/{job_schedule_parsed.job_id}")
         status = GetJobStatusResponseModel(**status_response.json())
         if status.status == "complete":
             result = status.result
@@ -73,3 +74,77 @@ async def test_enqueue_and_poll_ping_job(client):
 
     assert result == "pong"
 
+@pytest.mark.asyncio
+async def test_session_random_problem(client, db_session):
+    session_create_response = await client.post("/sessions/create_session")
+    session_create_parsed = SessionModel(**session_create_response.json())
+    assert session_create_parsed.id
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_variant_known(client):
+    payload = {"variant_id": None}
+    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_parsed = SessionModel(**session_create_response.json())
+    assert session_create_parsed.id
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_problem_known(client):
+    payload = {"problem_id": None}
+    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_parsed = SessionModel(**session_create_response.json())
+    assert session_create_parsed.id
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_problem_difficulty_known(client):
+    payload = {"difficulty": "easy"}
+    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_parsed = SessionModel(**session_create_response.json())
+    assert session_create_parsed.id
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_no_variants(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_start(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_session_stop(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_happy_path(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_wrong_code(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_state_guard(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_concurrent_guard(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_crashing_code(client):
+    pass
+
+@pytest.mark.asyncio
+@pytest.mark.skip
+async def test_submission_timeout(client):
+    pass
