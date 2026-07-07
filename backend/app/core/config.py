@@ -2,13 +2,16 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 
-def find_project_root(markers: List[str] = [".git", ".project-root"]) -> Path:
-    """Walk up from this file until a directory containing `marker` is found."""
+def find_project_root(markers: tuple[str, ...] = (".git", ".project-root")) -> Path | None:
+    """Walk up from this file looking for a marker. Returns None if not found
+    (e.g. inside a Docker image, where only `backend/` was copied in) —
+    in that case, real environment variables (set via docker-compose) are
+    used directly, with no .env file needed."""
     path = Path(__file__).resolve()
     for parent in path.parents:
         if any((parent / marker).exists() for marker in markers):
             return parent
-    raise RuntimeError(f"Could not find project root (looking for '{markers}')")
+    return None
 
 
 BASE_DIR = find_project_root()
@@ -30,9 +33,18 @@ class Settings(BaseSettings):
     eval_api_key: Optional[str] = None
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+    redis_host: str = "localhost"
+    redis_port: int = 6379
 
 
-    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env" if BASE_DIR else None,
+        extra="ignore",
+    )
+
+    @property
+    def redis_url(self) -> str:
+        return f"redis://{self.redis_host}:{self.redis_port}"
 
     @property
     def database_url(self) -> str:

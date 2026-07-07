@@ -3,11 +3,13 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers.string import StrOutputParser
 from app.services.llm import get_chat_model
 from app.services.embeddings import get_embeddings
-from app.services.judge_model import JudgeModel
+from app.services.judge_service import JudgeModel
 from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 from app.models.problem import ProblemVariant
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession 
+import uuid
 
 class VariantService:
     def __init__(self):
@@ -52,8 +54,14 @@ class VariantService:
         metric.measure(test_case)
         return metric.score >= metric.threshold
 
-    async def find_similar_variant(self, problem_id, embedding, threshold: float = 0.15):
-        result = await self.db.execute(
+    async def find_similar_variant(
+        self,
+        db: AsyncSession,
+        problem_id: uuid.UUID,
+        embedding: list[float],
+        threshold: float = 0.15,
+    ) -> ProblemVariant | None:
+        result = await db.execute(
             select(ProblemVariant)
             .where(ProblemVariant.problem_id == problem_id)
             .order_by(ProblemVariant.embedding.cosine_distance(embedding))

@@ -18,8 +18,7 @@ async def generate_and_save_variant(
     db: AsyncSession = Depends(get_db)
 ) -> Optional[PostGenerateAndSaveVariantResponseModel]:
     variant_service: VariantService = request.app.state.variant_service
-    result = await db.execute(select(Problem).where(Problem.id == problem_id))
-    problem = result.scalar_one_or_none()
+    problem = await db.get(Problem, problem_id)
     
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
@@ -43,7 +42,7 @@ async def generate_and_save_variant(
         embedding=payload["embedding"],
         validated=True
     )
-    similar_variant = await variant_service.find_similar_variant(problem_id=problem.id, embedding=payload["embedding"])
+    similar_variant = await variant_service.find_similar_variant(db=db, problem_id=problem.id, embedding=payload["embedding"])
     if similar_variant:
         new_variant = similar_variant
     else:

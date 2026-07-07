@@ -1,7 +1,8 @@
-# backend/tests/eval_llm.py
 from deepeval.models import DeepEvalBaseLLM
 from langchain_ollama import ChatOllama
 from app.core.config import settings
+import subprocess
+import json
 
 
 class JudgeModel(DeepEvalBaseLLM):
@@ -42,3 +43,27 @@ class JudgeModel(DeepEvalBaseLLM):
 
     def get_model_name(self):
         return f"{settings.eval_provider} - {self.judge_model.model}"
+
+    @staticmethod
+    def run_code(code: str, test_input: dict, timeout_seconds: int = 5) -> dict:
+        harness = f"""
+        {code}
+        import json, sys
+        result = solve(**json.loads(sys.argv[1]))
+        print(json.dumps(result))
+        """
+        try:
+            proc = subprocess.run(
+                ["python3", "-c", harness, json.dumps(test_input)],
+                capture_output=True, text=True, timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            return {"error": "timeout"}
+
+        if proc.returncode != 0:
+            return {"error": proc.stderr.strip()[:500]}
+
+        try:
+            return {"output": json.loads(proc.stdout.strip())}
+        except json.JSONDecodeError:
+            return {"error": "invalid output format"}

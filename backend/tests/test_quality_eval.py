@@ -1,10 +1,9 @@
-# backend/tests/test_quality_eval.py
 import pytest
 from deepeval import assert_test
 from deepeval.test_case import LLMTestCase, SingleTurnParams
 from deepeval.metrics import GEval
 from app.services.variant_service import VariantService
-from app.services.judge_model import JudgeModel
+from app.services.judge_service import JudgeModel
 
 @pytest.fixture
 def real_variant_service():
@@ -28,7 +27,8 @@ async def test_variant_quality(real_variant_service):
         criteria="Determine if the 'actual output' logically requires processing a list of numbers and an integer to return a list of integers.",
         evaluation_params=[SingleTurnParams.ACTUAL_OUTPUT],
         model=eval_model,
-        threshold=0.7
+        threshold=0.7,
+        verbose_mode=True
     )
 
     test_case = LLMTestCase(

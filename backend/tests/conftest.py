@@ -33,7 +33,7 @@ async def create_test_db_if_not_exists():
         result = await conn.execute(
             text("SELECT 1 FROM pg_database WHERE datname = 'test_db'")
         )
-        exists = result.scalar()
+        exists = result.scalar_one_or_none()
         
         if not exists:
             await conn.execute(text("CREATE DATABASE test_db"))
@@ -86,9 +86,9 @@ async def client(db_session):
         return db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            yield c
         
     app.dependency_overrides.clear()

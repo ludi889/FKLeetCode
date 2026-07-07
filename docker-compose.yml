@@ -9,6 +9,23 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:trixie
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   ollama:
     image: ollama/ollama:latest
@@ -16,24 +33,47 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   ollama-init:
     image: ollama/ollama:latest
     depends_on:
-      - ollama
+        ollama:
+          condition: service_healthy
     environment:
       - OLLAMA_HOST=ollama:11434
     command: >
       sh -c "
       echo 'Waiting for Ollama server to boot...' &&
       sleep 5 &&
-      echo 'Pulling nomic-embed-text (this is fast)...' &&
+      echo 'Pulling nomic-embed-text...' &&
       ollama pull nomic-embed-text &&
-      echo 'Pulling llama3.1 (this will take a few minutes)...' &&
+      echo 'Pulling llama3.1...' &&
       ollama pull llama3.1 &&
-      echo 'All AI models loaded successfully!'
+      echo 'All models loaded!'
       "
+
+  worker:
+    build: ./backend
+    command: uv run arq app.worker.settings.WorkerSettings
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
 
 volumes:
   pgdata:
   ollama_data:
+  redis:

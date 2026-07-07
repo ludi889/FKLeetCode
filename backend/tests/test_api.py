@@ -1,7 +1,11 @@
 import pytest
 from app.schemas.problem import ProblemRead
 from app.schemas.variants import PostGenerateAndSaveVariantResponseModel
+from app.schemas.jobs import PostEnqueueJobResponseModel, GetJobStatusResponseModel
 from unittest.mock import patch, AsyncMock
+from app.main import app
+import asyncio
+
 # Define your data once so you don't duplicate code
 TWO_SUM_PAYLOAD = {
     "title": "Two Sum",
@@ -27,7 +31,7 @@ async def test_reuses_similar_variant_when_one_exists(client):
     response = await client.post("/problems/", json=TWO_SUM_PAYLOAD)
     response = ProblemRead(**response.json())
     initial_problems_count = await client.get("/problems")
-    with patch("app.services.variant_service.VariantService.create_vector", new_callable=AsyncMock) as mock_embed:
+    with patch("app.services.variant_service.VariantService.generate_vector", new_callable=AsyncMock) as mock_embed:
         # First vector is the original
         vector_a = [0.1] * 768
         # Second vector is VERY similar
@@ -48,3 +52,24 @@ async def test_reuses_similar_variant_when_one_exists(client):
         # 5. Assert: They should be the same ID
         assert variant1_id == variant2_id
         # Verify the database didn't create a new row (optional, check count)
+
+@pytest.mark.asyncio
+async def test_state_is_populated(client):
+    assert hasattr(app.state, "variant_service")
+    assert hasattr(app.state, "arq_pool")
+
+@pytest.mark.asyncio
+async def test_enqueue_and_poll_ping_job(client):
+    job_schedule_response = await client.post("/jobs/ping")
+    job_schedule_response = PostEnqueueJobResponseModel(**job_schedule_response.json())
+    result = None
+    for _ in range(20):  # ~10s max, 0.5s between polls
+        status_response = await client.get(f"/jobs/{job_schedule_response.job_id}")
+        status = GetJobStatusResponseModel(**status_response.json())
+        if status.status == "complete":
+            result = status.result
+            break
+        await asyncio.sleep(0.5)
+
+    assert result == "pong"
+
