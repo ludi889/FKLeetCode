@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import uuid
 
 from app.db.session import get_db
 from app.models.problem import Problem
@@ -22,3 +23,10 @@ async def get_problems(db: AsyncSession = Depends(get_db)) -> GetProblemsRespons
     result = await db.execute(select(Problem))
     problems = result.scalars().all()
     return GetProblemsResponseModel(problems=problems)
+
+@router.get("/{problem_id}")
+async def get_problem(problem_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> ProblemRead:
+    problem = await db.get(Problem, problem_id)
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
+    return problem

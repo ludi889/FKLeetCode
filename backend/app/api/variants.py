@@ -10,7 +10,8 @@ from app.schemas.variants import (
     PostGenerateAndSaveVariantResponseModel, 
     GetProblemVariantsResponseModel
 )
-from app.services.variant_service import VariantService, GeneratedVariantSchema
+from app.services.variant_service import VariantService
+from app.schemas.variants import GeneratedVariantSchema
 
 router = APIRouter(prefix="/problems", tags=["Variants"])
 

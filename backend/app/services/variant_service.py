@@ -10,7 +10,7 @@ from app.services.llm import get_chat_model
 from app.services.embeddings import get_embeddings
 from app.services.judge_service import JudgeModel
 from app.models.problem import ProblemVariant
-from app.schemas.problem import GeneratedVariantSchema
+from app.schemas.variants import GeneratedVariantSchema
 
 class VariantService:
     def __init__(self):
