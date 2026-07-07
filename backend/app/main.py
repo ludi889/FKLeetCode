@@ -3,6 +3,7 @@ from app.api.problems import router as problems_router
 from app.api.variants import router as variant_router
 from app.api.jobs import router as jobs_router
 from app.api.submissions import router as submissions_router
+from app.api.sessions import router as sessions_router
 from app.core.config import settings
 from app.services.variant_service import VariantService
 from contextlib import asynccontextmanager
@@ -22,6 +23,7 @@ app.include_router(problems_router)
 app.include_router(variant_router)
 app.include_router(jobs_router)
 app.include_router(submissions_router)
+app.include_router(sessions_router)
 
 
 

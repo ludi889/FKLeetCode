@@ -33,7 +33,6 @@ class ProblemVariant(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, server_default=func.gen_random_uuid())
     problem_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("problems.id", ondelete="CASCADE"), nullable=False, comment="Source canonical problem this variant was translated from")
-    translated_statement: Mapped[str] = mapped_column(Text, nullable=False, comment="LLM-generated disguised version shown to the candidate")
     
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     scenario_context: Mapped[str] = mapped_column(Text, nullable=False, comment="The overarching theme (e.g., 'Logistics coordinator for space cargo')")

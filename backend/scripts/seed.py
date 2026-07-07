@@ -3,23 +3,29 @@ import asyncio
 from sqlalchemy import select
 
 from app.db.session import AsyncSessionLocal
-from app.db.base import Problem, Session
+from app.db.base import Problem, Session, ProblemVariant
 from sqlalchemy.ext.asyncio import AsyncSession
 
-async def seed_database(async_session: AsyncSession):
-    async with async_session as session:
-        for data in SEED_PROBLEMS:
-            existing = await session.execute(
-                select(Problem).where(Problem.title == data["title"])
-            )
-            if existing.scalar_one_or_none():
-                print(f"Skipping '{data['title']}' — already exists.")
-                continue
+async def seed_database(session: AsyncSession):
+    for data in SEED_PROBLEMS:
+        variants_data = data.pop("variants", [])
+        
+        existing = await session.execute(
+            select(Problem).where(Problem.title == data["title"])
+        )
+        if existing.scalar_one_or_none():
+            continue
 
-            session.add(Problem(**data))
-            print(f"Inserting '{data['title']}'.")
+        problem = Problem(**data)
+        session.add(problem)
+        
+        await session.flush()
 
-        await session.commit()
+        for v_data in variants_data:
+            variant = ProblemVariant(problem_id=problem.id, **v_data)
+            session.add(variant)
+
+    await session.flush()
 
 SEED_PROBLEMS = [
     {

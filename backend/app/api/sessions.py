@@ -15,6 +15,8 @@ router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 @router.post("/")
 async def create_session(request_data: PostCreateSessionRequestModel | None = None,  db: AsyncSession = Depends(get_db)) -> SessionModel:
+    count_result = await db.execute(select(func.count(Problem.id)))
+    total_problems = count_result.scalar()
     # Find related problem - we will need variants anyway
     if request_data and request_data.variant_id:
         variant = await db.get(ProblemVariant, request_data.variant_id)
@@ -24,7 +26,8 @@ async def create_session(request_data: PostCreateSessionRequestModel | None = No
         elif request_data and request_data.target_difficulty:
             possible_problems = await db.execute(select(Problem).where(Problem.difficulty == request_data.target_difficulty).options(selectinload(Problem.variants)).order_by(func.random()).limit(1))
         else:
-            possible_problems = await db.execute(select(Problem).options(selectinload(Problem.variants)))
+            possible_problems = await db.execute(select(Problem).options(selectinload(Problem.variants)).order_by(func.random()).limit(1))
+        print(possible_problems)
         problem = possible_problems.scalar_one_or_none()
         if not problem:
             raise HTTPException(status_code=404, detail="No valid problem found for provided constraints")

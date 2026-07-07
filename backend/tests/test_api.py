@@ -26,33 +26,55 @@ async def test_create_problem(client):
     response = ProblemRead(**response.json())
     assert response.title == "Two Sum"
 
-
 @pytest.mark.asyncio
 async def test_reuses_similar_variant_when_one_exists(client):
+    # 1. Setup original problem
     response = await client.post("/problems/", json=TWO_SUM_PAYLOAD)
-    response = ProblemRead(**response.json())
-    initial_problems_count = await client.get("/problems")
-    with patch("app.services.variant_service.VariantService.generate_vector", new_callable=AsyncMock) as mock_embed:
-        # First vector is the original
-        vector_a = [0.1] * 768
-        # Second vector is VERY similar
-        vector_b = [0.10001] * 768
+    problem_id = response.json()["id"]
+
+    # 2. Prepare fake payloads with highly similar embeddings
+    vector_a = [0.1] * 768
+    vector_b = [0.10001] * 768
+
+    fake_payload_a = {
+        "scenario_context": "Logistics in space",
+        "stage_1_mvp": "Fake MVP A",
+        "stage_2_curveball": "Fake Curveball A",
+        "stage_3_system": "Fake System A",
+        "technical_rubric": {},
+        "system_rubric": {},
+        "communication_rubric": {},
+        "embedding": vector_a
+    }
+    
+    fake_payload_b = fake_payload_a.copy()
+    fake_payload_b["embedding"] = vector_b
+    fake_payload_b["scenario_context"] = "A slightly different logistics story"
+
+    with patch("app.api.variants.VariantService.create_variant_payload", new_callable=AsyncMock) as mock_payload, \
+         patch("app.api.variants.VariantService.validate_variant", new_callable=AsyncMock) as mock_validate:
         
-        mock_embed.side_effect = [vector_a, vector_b]
+        mock_payload.side_effect = [fake_payload_a, fake_payload_b]
+        
+        mock_validate.return_value = True  
 
-        # 3. Act: Generate first variant
-        resp1 = await client.post(f"/problems/{response.id}/variants")
-        resp1 = PostGenerateAndSaveVariantResponseModel(**resp1.json())
-        variant1_id = resp1.id
+        resp1 = await client.post(f"/problems/{problem_id}/variants")
+        assert resp1.status_code == 200, resp1.text
+        
+        data1 = PostGenerateAndSaveVariantResponseModel(**resp1.json())
+        assert data1.is_valid is True
+        variant1_id = data1.id
 
-        # 4. Act: Generate second variant (should be similar enough to trigger reuse)
-        resp2 = await client.post(f"/problems/{response.id}/variants")
-        resp2 = PostGenerateAndSaveVariantResponseModel(**resp2.json())
-        variant2_id = resp2.id
+        resp2 = await client.post(f"/problems/{problem_id}/variants")
+        assert resp2.status_code == 200, resp2.text
+        
+        data2 = PostGenerateAndSaveVariantResponseModel(**resp2.json())
+        assert data2.is_valid is True
+        variant2_id = data2.id
 
-        # 5. Assert: They should be the same ID
         assert variant1_id == variant2_id
-        # Verify the database didn't create a new row (optional, check count)
+        
+        assert data2.scenario_context == "Logistics in space"
 
 @pytest.mark.asyncio
 async def test_state_is_populated(client):
@@ -75,76 +97,77 @@ async def test_enqueue_and_poll_ping_job(client):
     assert result == "pong"
 
 @pytest.mark.asyncio
-async def test_session_random_problem(client, db_session):
-    session_create_response = await client.post("/sessions/create_session")
+async def test_session_random_problem(seeded_client):
+    session_create_response = await seeded_client.post("/sessions/")
+    print(session_create_response)
     session_create_parsed = SessionModel(**session_create_response.json())
     assert session_create_parsed.id
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_variant_known(client):
+async def test_session_variant_known(seeded_client):
     payload = {"variant_id": None}
-    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_response = await seeded_client.post("/sessions/", json=payload)
     session_create_parsed = SessionModel(**session_create_response.json())
     assert session_create_parsed.id
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_problem_known(client):
+async def test_session_problem_known(seeded_client):
     payload = {"problem_id": None}
-    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_response = await seeded_client.post("/sessions/", json=payload)
     session_create_parsed = SessionModel(**session_create_response.json())
     assert session_create_parsed.id
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_problem_difficulty_known(client):
+async def test_session_problem_difficulty_known(seeded_client):
     payload = {"difficulty": "easy"}
-    session_create_response = await client.post("/sessions/create_session", json=payload)
+    session_create_response = await seeded_client.post("/sessions/", json=payload)
     session_create_parsed = SessionModel(**session_create_response.json())
     assert session_create_parsed.id
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_no_variants(client):
+async def test_session_no_variants(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_start(client):
+async def test_session_start(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_session_stop(client):
+async def test_session_stop(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_happy_path(client):
+async def test_submission_happy_path(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_wrong_code(client):
+async def test_submission_wrong_code(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_state_guard(client):
+async def test_submission_state_guard(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_concurrent_guard(client):
+async def test_submission_concurrent_guard(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_crashing_code(client):
+async def test_submission_crashing_code(seeded_client):
     pass
 
 @pytest.mark.asyncio
 @pytest.mark.skip
-async def test_submission_timeout(client):
+async def test_submission_timeout(seeded_client):
     pass

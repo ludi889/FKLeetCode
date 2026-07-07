@@ -5,6 +5,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
 from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from typing import AsyncGenerator
 
 import app.db.base  # noqa: F401
 from app.db.base_class import Base
@@ -91,27 +92,37 @@ async def seeded_db_session():
                 join_transaction_mode="create_savepoint",
                 expire_on_commit=False
             )
-            
-            seed_database(session)
+            await seed_database(session)
             
             yield session
             
             await session.close()
             await transaction.rollback()
 
-@pytest_asyncio.fixture(scope="function")
-async def client(db_session):
-    """
-    Yields an AsyncClient and overrides the FastAPI get_db dependency
-    so the app uses the test database instead of the dev database.
-    """
+async def _build_test_client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Private helper to yield a configured FastAPI client for a given DB session."""
     def override_get_db():
-        return db_session
+        return session
 
     app.dependency_overrides[get_db] = override_get_db
+    
     async with app.router.lifespan_context(app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as c:
             yield c
-        
+            
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(db_session):
+    """Client with an empty database."""
+    async for c in _build_test_client(db_session):
+        yield c
+
+
+@pytest_asyncio.fixture(scope="function")
+async def seeded_client(seeded_db_session):
+    """Client with a pre-seeded database."""
+    async for c in _build_test_client(seeded_db_session):
+        yield c
