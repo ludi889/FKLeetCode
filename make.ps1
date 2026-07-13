@@ -26,4 +26,4 @@ Write-Host "Seeding the database..." -ForegroundColor Cyan
 docker compose exec backend uv run python -m scripts.seed
 Check-Error
 
-Write-Host "🚀 Environment fully built, seeded, and ready!" -ForegroundColor Green
+Write-Host "Environment fully built, seeded, and ready!" -ForegroundColor Green

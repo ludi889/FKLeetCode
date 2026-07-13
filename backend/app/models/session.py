@@ -15,10 +15,12 @@ class Session(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, server_default=func.gen_random_uuid())
     
     problem_variant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("problem_variants.id", ondelete="RESTRICT"), nullable=False, comment="Which disguised variant this interview session used")
+    problem_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("problems.id", ondelete="RESTRICT"), nullable=False, comment="Direct reference to base problem to avoid waterfall queries")
     
     status: Mapped[str] = mapped_column(String, nullable=False, server_default="pending", comment="pending / active / completed / abandoned")
     
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    problem: Mapped["Problem"] = relationship(back_populates="sessions")
     variant: Mapped["ProblemVariant"] = relationship(back_populates="sessions")

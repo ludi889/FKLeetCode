@@ -281,16 +281,22 @@ SEED_PROBLEMS = [
         ]
     }
 ]
+
 async def seed() -> None:
-    await seed_database(AsyncSessionLocal())
+    async with AsyncSessionLocal() as session:
+        await seed_database(session)
+        await session.commit()
 
-
-if __name__ == "__main__":
+async def main() -> None:
     try:
-        asyncio.run(seed())
+        await seed()
     except Exception as e:
         print(f"Seeding failed: {e}")
         raise
     finally:
         print("Disposing engine...")
-        asyncio.run(engine.dispose())
+        await engine.dispose()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

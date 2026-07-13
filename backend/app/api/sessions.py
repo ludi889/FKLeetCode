@@ -14,32 +14,76 @@ from app.schemas.jobs import PostEnqueueJobResponseModel, SubmitCodePayloadModel
 router = APIRouter(prefix="/sessions", tags=["Sessions"])
 
 @router.post("/")
-async def create_session(request_data: PostCreateSessionRequestModel | None = None,  db: AsyncSession = Depends(get_db)) -> SessionModel:
-    count_result = await db.execute(select(func.count(Problem.id)))
-    total_problems = count_result.scalar()
-    # Find related problem - we will need variants anyway
+async def create_session(
+    request: Request, # <-- Injected to access variant_service
+    request_data: PostCreateSessionRequestModel | None = None, 
+    db: AsyncSession = Depends(get_db)
+) -> SessionModel:
+    
     if request_data and request_data.variant_id:
         variant = await db.get(ProblemVariant, request_data.variant_id)
+        if not variant:
+            raise HTTPException(status_code=404, detail="Requested variant not found")
+        problem = await db.get(Problem, variant.problem_id)
     else:
         if request_data and request_data.problem_id:
-            possible_problems = await db.execute(select(Problem).where(Problem.id == request_data.problem_id).options(selectinload(Problem.variants)).order_by(func.random()).limit(1))
+            query = select(Problem).where(Problem.id == request_data.problem_id)
         elif request_data and request_data.target_difficulty:
-            possible_problems = await db.execute(select(Problem).where(Problem.difficulty == request_data.target_difficulty).options(selectinload(Problem.variants)).order_by(func.random()).limit(1))
+            query = select(Problem).where(Problem.difficulty == request_data.target_difficulty)
         else:
-            possible_problems = await db.execute(select(Problem).options(selectinload(Problem.variants)).order_by(func.random()).limit(1))
-        print(possible_problems)
+            query = select(Problem)
+            
+        possible_problems = await db.execute(
+            query.options(selectinload(Problem.variants)).order_by(func.random()).limit(1)
+        )
         problem = possible_problems.scalar_one_or_none()
+        
         if not problem:
             raise HTTPException(status_code=404, detail="No valid problem found for provided constraints")
+            
         valid_variants = [v for v in problem.variants if v.validated]
-        if not valid_variants:
-            raise HTTPException(status_code=422, detail="No valid variants of the problem found")
-        variant = random.choice(valid_variants)
-    session = Session(problem_variant_id=variant.id,
-                      status="pending")
+        
+        if valid_variants:
+            variant = random.choice(valid_variants)
+        else:
+            variant_service = request.app.state.variant_service
+            
+            try:
+                payload = await variant_service.create_variant_payload(
+                    statement=problem.statement,
+                    signature=problem.signature
+                )
+                
+                new_variant = ProblemVariant(
+                    problem_id=problem.id,
+                    scenario_context=payload["scenario_context"],
+                    stage_1_mvp=payload["stage_1_mvp"],
+                    stage_2_curveball=payload["stage_2_curveball"],
+                    stage_3_system=payload["stage_3_system"],
+                    technical_rubric=payload["technical_rubric"],
+                    system_rubric=payload["system_rubric"],
+                    communication_rubric=payload["communication_rubric"],
+                    embedding=payload["embedding"],
+                    validated=True
+                )
+                db.add(new_variant)
+                await db.commit()
+                await db.refresh(new_variant)
+                variant = new_variant
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"On-the-fly variant generation failed: {str(e)}")
+
+    session = Session(
+        problem_id=problem.id,
+        problem_variant_id=variant.id,
+        status="pending"
+    )
+    
     db.add(session)
     await db.commit()
     await db.refresh(session)
+    
     return session
 
 @router.get("/{session_id}")

@@ -27,7 +27,7 @@
 			>Problems</a>
 
 			<a
-				href="/sessions/create"
+				href="/sessions/"
 				style="color: #ccc; text-decoration: none;"
 			>Create Session</a>
 

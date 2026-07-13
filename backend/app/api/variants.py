@@ -8,14 +8,16 @@ from app.db.session import get_db
 from app.models.problem import Problem, ProblemVariant
 from app.schemas.variants import (
     PostGenerateAndSaveVariantResponseModel, 
-    GetProblemVariantsResponseModel
+    GetProblemVariantsResponseModel,
+    GetProblemVariantResponseModel
 )
 from app.services.variant_service import VariantService
 from app.schemas.variants import GeneratedVariantSchema
 
-router = APIRouter(prefix="/problems", tags=["Variants"])
+problem_variants_router = APIRouter(prefix="/problems", tags=["Problem Variants"])
+variants_router = APIRouter(prefix="/variants", tags=["Variants"])
 
-@router.post("/{problem_id}/variants")
+@problem_variants_router.post("/{problem_id}/variants")
 async def generate_and_save_variant(
     request: Request,
     problem_id: uuid.UUID, 
@@ -77,7 +79,7 @@ async def generate_and_save_variant(
         is_valid=True
     )
 
-@router.get("/{problem_id}/variants")
+@problem_variants_router.get("/{problem_id}/variants")
 async def get_problem_variants(
     problem_id: uuid.UUID, 
     db: AsyncSession = Depends(get_db)
@@ -87,3 +89,15 @@ async def get_problem_variants(
     variants = result.scalars().all()
     
     return GetProblemVariantsResponseModel(variants=variants)
+
+@variants_router.get("/{variant_id}")
+async def get_variant_by_id(
+    variant_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db)
+) -> GetProblemVariantResponseModel:
+    variant = await db.get(ProblemVariant, variant_id)
+    
+    if not variant:
+        raise HTTPException(status_code=404, detail="Variant not found")
+        
+    return variant

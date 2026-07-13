@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.problems import router as problems_router
-from app.api.variants import router as variant_router
+from app.api.variants import problem_variants_router as problem_variant_router
+from app.api.variants import variants_router as variant_router
 from app.api.jobs import router as jobs_router
 from app.api.submissions import router as submissions_router
 from app.api.sessions import router as sessions_router
@@ -21,22 +22,21 @@ async def lifespan(app: FastAPI):
     await app.state.arq_pool.aclose()
 app = FastAPI(title="FKLeetCode", lifespan=lifespan)
 
-# --- CORS CONFIGURATION ---
-# List the exact origins your frontend will be served from.
 origins = [
-    "http://localhost:5173",      # Standard SvelteKit Vite dev server
-    "http://127.0.0.1:5173",      # Alternative local IP
-    "http://localhost:4173",      # SvelteKit preview server (for production builds)
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:4173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,       # Required if you ever add cookies/authentication
-    allow_methods=["*"],          # Allows GET, POST, PUT, DELETE, OPTIONS, etc.
-    allow_headers=["*"],          # Allows custom headers like Authorization or Content-Type
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.include_router(problems_router)
+app.include_router(problem_variant_router)
 app.include_router(variant_router)
 app.include_router(jobs_router)
 app.include_router(submissions_router)

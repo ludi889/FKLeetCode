@@ -11,7 +11,7 @@ setup:
 	@echo "--- Migrating & Seeding database ---"
 	$(MAKE) migrate
 	$(MAKE) seed
-	@echo "🚀 FKLeetCode environment fully built, seeded, and ready!"
+	@echo "FKLeetCode environment fully built, seeded, and ready!"
 
 teardown:
 	@echo "--- Destroying environment ---"

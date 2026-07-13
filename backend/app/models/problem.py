@@ -26,6 +26,7 @@ class Problem(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     variants: Mapped[list["ProblemVariant"]] = relationship(back_populates="problem")
+    sessions: Mapped[list["Session"]] = relationship(back_populates="problem")
 
 
 class ProblemVariant(Base):

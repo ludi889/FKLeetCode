@@ -27,39 +27,39 @@ services:
       timeout: 3s
       retries: 5
 
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list || exit 1"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "ollama list || exit 1"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 10
 
-  ollama-init:
-    image: ollama/ollama:latest
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      - OLLAMA_HOST=ollama:11434
-    command: >
-      sh -c "
-      echo 'Waiting for Ollama server to boot...' &&
-      sleep 5 &&
-      echo 'Pulling nomic-embed-text...' &&
-      ollama pull nomic-embed-text &&
-      echo 'Pulling llama3.1...' &&
-      ollama pull llama3.1 &&
-      echo 'All models loaded!'
-      "
+  # ollama-init:
+  #   image: ollama/ollama:latest
+  #   depends_on:
+  #     ollama:
+  #       condition: service_healthy
+  #   environment:
+  #     - OLLAMA_HOST=ollama:11434
+  #   command: >
+  #     sh -c "
+  #     echo 'Waiting for Ollama server to boot...' &&
+  #     sleep 5 &&
+  #     echo 'Pulling nomic-embed-text...' &&
+  #     ollama pull nomic-embed-text &&
+  #     echo 'Pulling llama3.1...' &&
+  #     ollama pull llama3.1 &&
+  #     echo 'All models loaded!'
+  #     "
 
   backend:
     build: ./backend
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload-exclude .venv
     ports:
       - "8000:8000"
     env_file: .env
@@ -88,8 +88,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
+      # ollama:
+      #   condition: service_healthy
 
   frontend:
     build:
@@ -107,5 +107,5 @@ services:
 
 volumes:
   pgdata:
-  ollama_data:
+  # ollama_data:
   redis:

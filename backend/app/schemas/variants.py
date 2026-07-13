@@ -7,7 +7,7 @@ class PostGenerateAndSaveVariantResponseModel(BaseModel):
     scenario_context: Optional[str] = None
     is_valid: bool
 
-class GetProblemVariantsResponseEntryModel(BaseModel):
+class GetProblemVariantResponseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: uuid.UUID
@@ -22,7 +22,7 @@ class GetProblemVariantsResponseEntryModel(BaseModel):
     validated: bool
 
 class GetProblemVariantsResponseModel(BaseModel):
-    variants: list[GetProblemVariantsResponseEntryModel]
+    variants: list[GetProblemVariantResponseModel]
 
 class GeneratedVariantSchema(BaseModel):
     scenario_context: str = Field(..., description="The overarching theme (e.g., 'Logistics coordinator for space cargo'). No coding instructions here.")
